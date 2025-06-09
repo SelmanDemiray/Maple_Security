@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suricata Stack Admin Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #0066cc;
+            --primary-dark: #004499;
+            --secondary-color: #f0f8ff;
+            --success-color: #00a86b;
+            --warning-color: #ff8c00;
+            --error-color: #dc3545;
+            --text-primary: #1a1a1a;
+            --text-secondary: #6c757d;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #e9ecef;
+            --border-color: #dee2e6;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+            --shadow-lg: 0 8px 25px rgba(0,0,0,0.15);
+            --border-radius: 12px;
+            --border-radius-sm: 8px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 1.5rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .header-title h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        .header-title .subtitle {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: var(--border-radius-sm);
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.online {
+            background: var(--success-color);
+        }
+
+        .status-indicator.offline {
+            background: var(--error-color);
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .grid-wide {
+            grid-column: 1 / -1;
+        }
+
+        .card {
+            background: var(--bg-primary);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--bg-secondary);
+        }
+
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--border-radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: white;
+        }
+
+        .icon-health { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .icon-containers { background: linear-gradient(135deg, #f093fb, #f5576c); }
+        .icon-stats { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+        .icon-events { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+        .icon-alerts { background: linear-gradient(135deg, #fa709a, #fee140); }
+        .icon-timeline { background: linear-gradient(135deg, #a8edea, #fed6e3); }
+        .icon-indices { background: linear-gradient(135deg, #ff9a9e, #fecfef); }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            background: var(--bg-secondary);
+            border-radius: var(--border-radius-sm);
+            transition: var(--transition);
+        }
+
+        .metric:hover {
+            background: var(--bg-tertiary);
+            transform: translateX(4px);
+        }
+
+        .metric-label {
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .metric-value {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .status-good { color: var(--success-color); }
+        .status-warning { color: var(--warning-color); }
+        .status-error { color: var(--error-color); }
+
+        .container-status {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .status-dot.running {
+            background: var(--success-color);
+        }
+
+        .status-dot.stopped {
+            background: var(--error-color);
+        }
+
+        .status-dot::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: inherit;
+            animation: ping 2s infinite;
+        }
+
+        @keyframes ping {
+            0% { transform: scale(1); opacity: 1; }
+            75%, 100% { transform: scale(2); opacity: 0; }
+        }
+
+        .chart-container {
+            position: relative;
+            height: 350px;
+            margin: 1rem 0;
+        }
+
+        .chart-container canvas {
+            border-radius: var(--border-radius-sm);
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            color: var(--text-secondary);
+        }
+
+        .loading::after {
+            content: '';
+            width: 24px;
+            height: 24px;
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            margin-left: 1rem;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .index-management {
+            background: var(--bg-primary);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .table th {
+            background: var(--bg-secondary);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .table tr:hover {
+            background: var(--bg-secondary);
+        }
+
+        .index-health {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .health-green {
+            background: rgba(0, 168, 107, 0.1);
+            color: var(--success-color);
+        }
+
+        .health-yellow {
+            background: rgba(255, 140, 0, 0.1);
+            color: var(--warning-color);
+        }
+
+        .health-red {
+            background: rgba(220, 53, 69, 0.1);
+            color: var(--error-color);
+        }
+
+        .alert-banner {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 1rem 2rem;
+            margin-bottom: 2rem;
+            border-radius: var(--border-radius);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .alert-banner i {
+            font-size: 1.5rem;
+        }
+
+        .status-detail {
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: var(--bg-secondary);
+            border-radius: var(--border-radius-sm);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .troubleshooting-panel {
+            background: linear-gradient(135deg, #ff9a9e, #fecfef);
+            color: #333;
+            padding: 1rem;
+            border-radius: var(--border-radius-sm);
+            margin-top: 1rem;
+        }
+
+        .troubleshooting-panel h4 {
+            margin: 0 0 0.5rem 0;
+            color: #d63384;
+        }
+
+        .troubleshooting-panel ul {
+            margin: 0.5rem 0;
+            padding-left: 1.5rem;
+        }
+
+        .logs-viewer {
+            background: #1a1a1a;
+            color: #00ff00;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.8rem;
+            padding: 1rem;
+            border-radius: var(--border-radius-sm);
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 1rem;
+            white-space: pre-wrap;
+        }
+
+        .service-health {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .health-metric {
+            background: var(--bg-secondary);
+            padding: 0.5rem;
+            border-radius: var(--border-radius-sm);
+            text-align: center;
+            font-size: 0.8rem;
+        }
+
+        .restart-reason {
+            background: rgba(220, 53, 69, 0.1);
+            border-left: 4px solid var(--error-color);
+            padding: 0.75rem;
+            margin-top: 0.5rem;
+            border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
+        }
+
+        .restart-reason .reason-title {
+            font-weight: 600;
+            color: var(--error-color);
+            margin-bottom: 0.25rem;
+        }
+
+        .config-validation {
+            background: rgba(255, 140, 0, 0.1);
+            border: 1px solid var(--warning-color);
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            margin-top: 1rem;
+        }
+
+        .validation-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+        }
+
+        .validation-item.pass {
+            color: var(--success-color);
+        }
+
+        .validation-item.fail {
+            color: var(--error-color);
+        }
+
+        .validation-item.warning {
+            color: var(--warning-color);
+        }
+
+        .recommendation-panel {
+            background: linear-gradient(135deg, #a8edea, #fed6e3);
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            margin-top: 1rem;
+        }
+
+        .recommendation-panel h4 {
+            margin: 0 0 0.5rem 0;
+            color: #0066cc;
+        }
+
+        .toggle-logs {
+            background: #343a40;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius-sm);
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+        }
+
+        .toggle-logs:hover {
+            background: #495057;
+        }
+
+        .service-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .metric-box {
+            background: var(--bg-secondary);
+            padding: 0.75rem;
+            border-radius: var(--border-radius-sm);
+            text-align: center;
+        }
+
+        .metric-box .value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .metric-box .label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        .connection-test {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: var(--bg-secondary);
+            border-radius: var(--border-radius-sm);
+            margin-top: 0.5rem;
+        }
+
+        .test-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .test-status.success { background: var(--success-color); }
+        .test-status.error { background: var(--error-color); }
+        .test-status.testing { background: var(--warning-color); animation: pulse 1s infinite; }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="header-title">
+                <div>
+                    <h1><i class="fas fa-shield-alt"></i> Suricata Security Stack</h1>
+                    <div class="subtitle">Real-time Security Monitoring & Analytics Platform</div>
+                </div>
+            </div>
+            <div class="header-actions">
+                <div class="status-indicator online" id="connection-status" title="System Status"></div>
+                <button class="btn btn-secondary" onclick="window.open('http://localhost:5601', '_blank')">
+                    <i class="fas fa-chart-line"></i> OpenSearch Dashboard
+                </button>
+                <button class="btn btn-primary" onclick="refreshAll()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="alert-banner">
+            <i class="fas fa-info-circle"></i>
+            <div>
+                <strong>Index Pattern Setup Required:</strong> 
+                Create an index pattern "suricata-*" in OpenSearch Dashboard to visualize your data effectively.
+                <a href="http://localhost:5601/app/management/opensearch-dashboards/indexPatterns" target="_blank" style="color: white; text-decoration: underline; margin-left: 10px;">
+                    Create Index Pattern →
+                </a>
+            </div>
+        </div>
+
+        <div class="grid">
+            <!-- Enhanced System Health -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon icon-health">
+                            <i class="fas fa-heartbeat"></i>
+                        </div>
+                        System Health & Diagnostics
+                    </div>
+                </div>
+                <div id="health-status" class="loading">Loading system health...</div>
+                
+                <!-- Connection Tests -->
+                <div id="connection-tests" style="margin-top: 1rem;">
+                    <h4 style="margin-bottom: 0.5rem; color: var(--text-primary);">Service Connectivity</h4>
+                    <div class="connection-test">
+                        <div class="test-status testing" id="opensearch-test"></div>
+                        <span>OpenSearch Connection</span>
+                        <span id="opensearch-latency" style="margin-left: auto; font-size: 0.8rem;"></span>
+                    </div>
+                    <div class="connection-test">
+                        <div class="test-status testing" id="docker-test"></div>
+                        <span>Docker Engine</span>
+                        <span id="docker-status" style="margin-left: auto; font-size: 0.8rem;"></span>
+                    </div>
+                </div>
+
+                <!-- Configuration Validation -->
+                <div class="config-validation">
+                    <h4><i class="fas fa-cog"></i> Configuration Validation</h4>
+                    <div id="config-checks"></div>
+                </div>
+            </div>
+
+            <!-- Enhanced Container Status -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon icon-containers">
+                            <i class="fab fa-docker"></i>
+                        </div>
+                        Container Status & Diagnostics
+                    </div>
+                </div>
+                <div id="container-status" class="loading">Loading containers...</div>
+            </div>
+
+            <!-- Enhanced Data Statistics -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon icon-stats">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        Data Pipeline Statistics
+                    </div>
+                </div>
+                <div id="data-stats" class="loading">Loading statistics...</div>
+                
+                <div class="service-metrics" id="pipeline-metrics">
+                    <!-- Metrics will be populated here -->
+                </div>
+            </div>
+
+            <!-- Service Logs Viewer -->
+            <div class="card grid-wide">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon" style="background: linear-gradient(135deg, #2c3e50, #34495e);">
+                            <i class="fas fa-terminal"></i>
+                        </div>
+                        Real-time Service Logs
+                    </div>
+                </div>
+                <div>
+                    <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                        <button class="toggle-logs" onclick="toggleLogs('suricata')">Suricata</button>
+                        <button class="toggle-logs" onclick="toggleLogs('logstash')">Logstash</button>
+                        <button class="toggle-logs" onclick="toggleLogs('opensearch')">OpenSearch</button>
+                        <button class="toggle-logs" onclick="toggleLogs('admin-dashboard')">Dashboard</button>
+                    </div>
+                    <div class="logs-viewer" id="logs-viewer">
+                        Select a service to view its logs...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Index Management -->
+            <div class="card grid-wide">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon icon-indices">
+                            <i class="fas fa-list"></i>
+                        </div>
+                        Index Management
+                    </div>
+                </div>
+                <div class="index-management">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Index Name</th>
+                                <th>Health</th>
+                                <th>Status</th>
+                                <th>Documents</th>
+                                <th>Size</th>
+                                <th>Created</th>
+                            </tr>
+                        </thead>
+                        <tbody id="indices-table">
+                            <tr>
+                                <td colspan="6" class="loading" style="text-align: center;">Loading indices...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Event Types Chart -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon icon-events">
+                            <i class="fas fa-chart-pie"></i>
+                        </div>
+                        Event Types
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="eventTypesChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Alert Severity Chart -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon icon-alerts">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        Alert Severity
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="alertSeverityChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Hourly Timeline -->
+            <div class="card grid-wide">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon icon-timeline">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        Event Timeline (24h)
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="timelineChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let eventTypesChart, alertSeverityChart, timelineChart;
+        let currentLogService = null;
+        let logInterval = null;
+
+        async function fetchData(endpoint) {
+            try {
+                document.getElementById('connection-status').className = 'status-indicator online';
+                const response = await fetch(`/api/${endpoint}`);
+                return await response.json();
+            } catch (error) {
+                console.error(`Error fetching ${endpoint}:`, error);
+                document.getElementById('connection-status').className = 'status-indicator offline';
+                return null;
+            }
+        }
+
+        async function updateHealth() {
+            const health = await fetchData('health');
+            const healthDiv = document.getElementById('health-status');
+            
+            if (health) {
+                const statusClass = health.status === 'green' ? 'status-good' : 
+                                  health.status === 'yellow' ? 'status-warning' : 'status-error';
+                healthDiv.innerHTML = `
+                    <div class="metric">
+                        <span class="metric-label">Cluster Status</span>
+                        <span class="metric-value ${statusClass}">${health.status.toUpperCase()}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Active Nodes</span>
+                        <span class="metric-value">${health.number_of_nodes}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Active Shards</span>
+                        <span class="metric-value">${health.active_shards}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Unassigned Shards</span>
+                        <span class="metric-value ${health.unassigned_shards > 0 ? 'status-warning' : ''}">${health.unassigned_shards}</span>
+                    </div>
+                `;
+
+                if (health.status !== 'green') {
+                    healthDiv.innerHTML += `
+                        <div class="troubleshooting-panel">
+                            <h4><i class="fas fa-exclamation-triangle"></i> Health Issues Detected</h4>
+                            ${health.status === 'yellow' ? `
+                                <p><strong>Yellow Status:</strong> Some replica shards are unassigned.</p>
+                                <ul>
+                                    <li>Check if you have enough nodes for replication</li>
+                                    <li>Consider reducing replica count for single-node setup</li>
+                                    <li>Monitor disk space and memory usage</li>
+                                </ul>
+                            ` : `
+                                <p><strong>Red Status:</strong> Primary shards are unassigned!</p>
+                                <ul>
+                                    <li>Check OpenSearch logs for errors</li>
+                                    <li>Verify disk space availability</li>
+                                    <li>Restart OpenSearch if necessary</li>
+                                    <li>Check for corrupted indices</li>
+                                </ul>
+                            `}
+                        </div>
+                    `;
+                }
+            } else {
+                healthDiv.innerHTML = `
+                    <div class="metric">
+                        <span class="status-error"><i class="fas fa-times-circle"></i> OpenSearch Unavailable</span>
+                    </div>
+                    <div class="troubleshooting-panel">
+                        <h4><i class="fas fa-exclamation-triangle"></i> Connection Failed</h4>
+                        <ul>
+                            <li>Check if OpenSearch container is running</li>
+                            <li>Verify network connectivity</li>
+                            <li>Check OpenSearch logs for startup errors</li>
+                            <li>Ensure port 9200 is accessible</li>
+                        </ul>
+                    </div>
+                `;
+            }
+
+            // Test connections
+            await testConnections();
+            await validateConfiguration();
+        }
+
+        async function updateContainers() {
+            const containers = await fetchData('containers');
+            const containerDiv = document.getElementById('container-status');
+            
+            if (containers && containers.length > 0) {
+                containerDiv.innerHTML = containers.map(container => {
+                    const isProblematic = container.status !== 'running';
+                    const restartCount = container.restart_count || 0;
+                    
+                    return `
+                        <div class="metric">
+                            <div class="container-status">
+                                <div class="status-dot ${container.status === 'running' ? 'running' : 'stopped'}"></div>
+                                <span class="metric-label">${container.name}</span>
+                            </div>
+                            <span class="metric-value ${container.status === 'running' ? 'status-good' : 'status-error'}">
+                                ${container.status.toUpperCase()}
+                            </span>
+                        </div>
+                        ${container.cpu_usage !== undefined ? `
+                            <div class="service-health">
+                                <div class="health-metric">
+                                    <div style="font-weight: 600;">${container.cpu_usage.toFixed(1)}%</div>
+                                    <div style="color: var(--text-secondary);">CPU</div>
+                                </div>
+                                <div class="health-metric">
+                                    <div style="font-weight: 600;">${(container.memory_usage / 1024 / 1024).toFixed(0)}MB</div>
+                                    <div style="color: var(--text-secondary);">Memory</div>
+                                </div>
+                            </div>
+                        ` : ''}
+                        ${restartCount > 0 ? `
+                            <div class="restart-reason">
+                                <div class="reason-title">
+                                    <i class="fas fa-redo"></i> Restart Count: ${restartCount}
+                                </div>
+                                ${getRestartTroubleshooting(container.name, container.status)}
+                            </div>
+                        ` : ''}
+                        ${isProblematic ? `
+                            <div class="troubleshooting-panel">
+                                <h4>Troubleshooting ${container.name}</h4>
+                                ${getTroubleshootingSteps(container.name, container.status)}
+                            </div>
+                        ` : ''}
+                    `;
+                }).join('');
+            } else {
+                containerDiv.innerHTML = '<div class="metric"><span class="status-error"><i class="fas fa-times-circle"></i> Container stats unavailable</span></div>';
+            }
+        }
+
+        async function updateStats() {
+            const stats = await fetchData('stats');
+            const statsDiv = document.getElementById('data-stats');
+            
+            if (stats) {
+                statsDiv.innerHTML = `
+                    <div class="metric">
+                        <span class="metric-label">Total Documents</span>
+                        <span class="metric-value">${stats.total_documents.toLocaleString()}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Active Indices</span>
+                        <span class="metric-value">${stats.indices_count}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Storage Used</span>
+                        <span class="metric-value">${stats.total_size.toFixed(2)} GB</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Ingestion Rate</span>
+                        <span class="metric-value">${stats.ingestion_rate || 'N/A'} docs/sec</span>
+                    </div>
+                `;
+                
+                // Update pipeline metrics
+                const metricsDiv = document.getElementById('pipeline-metrics');
+                metricsDiv.innerHTML = `
+                    <div class="metric-box">
+                        <div class="value">${stats.indices_count}</div>
+                        <div class="label">Indices</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="value">${stats.total_documents > 0 ? '✓' : '✗'}</div>
+                        <div class="label">Data Flow</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="value">${(stats.total_size * 1024).toFixed(0)}MB</div>
+                        <div class="label">Storage</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="value">${stats.last_update || 'Never'}</div>
+                        <div class="label">Last Update</div>
+                    </div>
+                `;
+
+                if (stats.total_documents === 0) {
+                    statsDiv.innerHTML += `
+                        <div class="troubleshooting-panel">
+                            <h4><i class="fas fa-info-circle"></i> No Data Detected</h4>
+                            <ul>
+                                <li>Check if Suricata is generating logs</li>
+                                <li>Verify Logstash is processing eve.json</li>
+                                <li>Ensure network traffic is being monitored</li>
+                                <li>Check file permissions on log directory</li>
+                            </ul>
+                        </div>
+                    `;
+                }
+                
+                if (stats.aggregations) {
+                    updateCharts(stats.aggregations);
+                }
+            } else {
+                statsDiv.innerHTML = '<div class="metric"><span class="status-error"><i class="fas fa-times-circle"></i> Statistics unavailable</span></div>';
+            }
+        }
+
+        async function testConnections() {
+            const opensearchTest = document.getElementById('opensearch-test');
+            const opensearchLatency = document.getElementById('opensearch-latency');
+            const dockerTest = document.getElementById('docker-test');
+            const dockerStatus = document.getElementById('docker-status');
+
+            // Test OpenSearch
+            const start = Date.now();
+            try {
+                await fetchData('health');
+                const latency = Date.now() - start;
+                opensearchTest.className = 'test-status success';
+                opensearchLatency.textContent = `${latency}ms`;
+            } catch (error) {
+                opensearchTest.className = 'test-status error';
+                opensearchLatency.textContent = 'Failed';
+            }
+
+            // Test Docker
+            try {
+                await fetchData('containers');
+                dockerTest.className = 'test-status success';
+                dockerStatus.textContent = 'Connected';
+            } catch (error) {
+                dockerTest.className = 'test-status error';
+                dockerStatus.textContent = 'Failed';
+            }
+        }
+
+        async function validateConfiguration() {
+            const validation = await fetchData('validate');
+            const checksDiv = document.getElementById('config-checks');
+            
+            if (validation) {
+                checksDiv.innerHTML = validation.checks.map(check => `
+                    <div class="validation-item ${check.status}">
+                        <i class="fas fa-${check.status === 'pass' ? 'check' : check.status === 'fail' ? 'times' : 'exclamation-triangle'}"></i>
+                        <span>${check.name}: ${check.message}</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function getTroubleshootingSteps(containerName, status) {
+            const steps = {
+                'logstash': `
+                    <ul>
+                        <li><strong>Most Common:</strong> Check if /var/log/suricata/eve.json exists and has data</li>
+                        <li>Verify OpenSearch is accessible: <code>curl http://opensearch:9200</code></li>
+                        <li>Check Logstash configuration syntax in pipeline/logstash.conf</li>
+                        <li>Monitor memory usage - Logstash may need more RAM (increase LS_JAVA_OPTS)</li>
+                        <li>Check file permissions on Suricata logs directory</li>
+                        <li><strong>Restart Issue:</strong> Often caused by missing eve.json file - ensure Suricata is generating logs</li>
+                    </ul>
+                    <div style="background: #fff3cd; padding: 0.5rem; border-radius: 4px; margin-top: 0.5rem;">
+                        <strong>Quick Fix:</strong> Run <code>docker exec suricata ls -la /var/log/suricata/</code> to check if eve.json exists
+                    </div>
+                `,
+                'suricata': `
+                    <ul>
+                        <li>Check network interface configuration</li>
+                        <li>Verify Suricata has necessary permissions (NET_ADMIN)</li>
+                        <li>Check if rules file is properly loaded</li>
+                        <li>Monitor for configuration file syntax errors</li>
+                        <li>Ensure log directory is writable</li>
+                    </ul>
+                `,
+                'opensearch': `
+                    <ul>
+                        <li>Check available disk space (need >15% free)</li>
+                        <li>Monitor memory usage and JVM heap settings</li>
+                        <li>Verify data directory permissions</li>
+                        <li>Check for port conflicts on 9200/9600</li>
+                        <li>Review JVM and system logs</li>
+                    </ul>
+                `,
+                'opensearch-dashboards': `
+                    <ul>
+                        <li>Verify OpenSearch is running and accessible</li>
+                        <li>Check port 5601 availability</li>
+                        <li>Review dashboard configuration</li>
+                        <li>Monitor memory usage</li>
+                    </ul>
+                `
+            };
+            return steps[containerName] || '<ul><li>Check container logs for specific error messages</li></ul>';
+        }
+
+        function getRestartTroubleshooting(containerName, status) {
+            const reasons = {
+                'logstash': 'Common causes: Missing eve.json file, OpenSearch connection failure, configuration errors, memory exhaustion. Check if Suricata is generating logs first.',
+                'suricata': 'Common causes: Network interface issues, rule syntax errors, insufficient permissions, configuration problems',
+                'opensearch': 'Common causes: Out of memory, disk space full, configuration errors, port conflicts',
+                'opensearch-dashboards': 'Common causes: Cannot connect to OpenSearch, memory issues, configuration problems'
+            };
+            return reasons[containerName] || 'Check logs for specific error messages';
+        }
+
+        async function toggleLogs(serviceName) {
+            const logsViewer = document.getElementById('logs-viewer');
+            
+            if (currentLogService === serviceName) {
+                // Stop current log stream
+                if (logInterval) {
+                    clearInterval(logInterval);
+                    logInterval = null;
+                }
+                currentLogService = null;
+                logsViewer.textContent = 'Select a service to view its logs...';
+                return;
+            }
+
+            currentLogService = serviceName;
+            logsViewer.textContent = `Loading ${serviceName} logs...`;
+            
+            // Clear previous interval
+            if (logInterval) {
+                clearInterval(logInterval);
+            }
+
+            // Start log streaming
+            const updateLogs = async () => {
+                try {
+                    const response = await fetch(`/api/logs/${serviceName}`);
+                    const logs = await response.text();
+                    logsViewer.textContent = logs;
+                    logsViewer.scrollTop = logsViewer.scrollHeight;
+                } catch (error) {
+                    logsViewer.textContent = `Error loading logs: ${error.message}`;
+                }
+            };
+
+            await updateLogs();
+            logInterval = setInterval(updateLogs, 5000); // Update every 5 seconds
+        }
+
+        async function refreshAll() {
+            const refreshBtn = document.querySelector('.btn-primary');
+            const originalText = refreshBtn.innerHTML;
+            refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+            refreshBtn.disabled = true;
+
+            await Promise.all([
+                updateHealth(),
+                updateContainers(),
+                updateStats(),
+                updateIndices()
+            ]);
+
+            refreshBtn.innerHTML = originalText;
+            refreshBtn.disabled = false;
+        }
+
+        // Initial load
+        refreshAll();
+
+        // Auto-refresh every 30 seconds
+        setInterval(refreshAll, 30000);
+    </script>
+</body>
+</html>
