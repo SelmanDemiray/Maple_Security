@@ -32,28 +32,51 @@ docker volume rm sec_suricata-logs 2>/dev/null || true
 docker volume rm sec_opensearch-data 2>/dev/null || true
 docker volume rm suricata-logs 2>/dev/null || true
 docker volume rm opensearch-data 2>/dev/null || true
+docker volume rm maple_security_suricata-logs 2>/dev/null || true
+docker volume rm maple_security_opensearch-data 2>/dev/null || true
 
 # Remove the custom network
 echo "Removing custom networks..."
 docker network rm sec_opensearch-net 2>/dev/null || true
 docker network rm opensearch-net 2>/dev/null || true
+docker network rm maple_security_opensearch-net 2>/dev/null || true
 
 # Clean up any dangling networks
 docker network prune -f
 
-# Remove all related images
+# Remove ALL related images (more comprehensive approach)
 echo "Removing Docker images..."
-docker rmi jasonish/suricata:latest 2>/dev/null || true
-docker rmi opensearchproject/logstash-oss-with-opensearch-output-plugin:latest 2>/dev/null || true
-docker rmi opensearchproject/opensearch:latest 2>/dev/null || true
-docker rmi opensearchproject/opensearch-dashboards:latest 2>/dev/null || true
+
+# Remove Suricata images (all versions)
+docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "suricata|jasonish" | xargs -r docker rmi 2>/dev/null || true
+
+# Remove OpenSearch images (all versions)
+docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "opensearch" | xargs -r docker rmi 2>/dev/null || true
+
+# Remove Logstash images (all versions)
+docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "logstash" | xargs -r docker rmi 2>/dev/null || true
+
+# Remove admin dashboard images
+docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "admin-dashboard|maple_security" | xargs -r docker rmi 2>/dev/null || true
+
+# Remove Node.js base images that were used for building
+docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "^node:" | xargs -r docker rmi 2>/dev/null || true
+
+# Alternative approach - remove by image ID for anything that might be missed
+echo "Removing any remaining related images by pattern..."
+docker images | grep -E "(suricata|opensearch|logstash|admin-dashboard|maple_security)" | awk '{print $3}' | xargs -r docker rmi -f 2>/dev/null || true
 
 # Clean up any dangling images
+echo "Cleaning up dangling images..."
 docker image prune -f
+
+# More aggressive cleanup for untagged images
+echo "Removing untagged images..."
+docker image prune -a -f
 
 # Clean up build cache
 echo "Cleaning up build cache..."
-docker builder prune -f
+docker builder prune -f --all 2>/dev/null || docker system prune -f
 
 # Verify all containers are gone
 REMAINING=$(docker ps -a --filter "name=suricata" --filter "name=logstash" --filter "name=opensearch" --filter "name=opensearch-node" --filter "name=admin-dashboard" --format "{{.Names}}")
@@ -67,14 +90,32 @@ else
   echo "✅ All specified containers successfully removed!"
 fi
 
+# Check for remaining images
+echo ""
+echo "Checking for remaining related images..."
+REMAINING_IMAGES=$(docker images | grep -E "(suricata|opensearch|logstash|admin-dashboard|maple_security)" || true)
+if [ -n "$REMAINING_IMAGES" ]; then
+  echo "⚠️  WARNING: Some related images still remain:"
+  echo "$REMAINING_IMAGES"
+  echo ""
+  echo "To force remove these images, run:"
+  echo "docker rmi -f \$(docker images | grep -E '(suricata|opensearch|logstash|admin-dashboard|maple_security)' | awk '{print \$3}')"
+else
+  echo "✅ All related images successfully removed!"
+fi
+
 # Final system cleanup
+echo ""
 echo "Running final system cleanup..."
-docker system prune -f
+docker system prune -a -f --volumes
 
 echo ""
 echo "✅ CLEANUP COMPLETE!"
 echo "All Docker resources have been destroyed."
 echo "The local configuration files remain intact."
+echo ""
+echo "Current Docker storage usage:"
+docker system df
 echo ""
 echo "To rebuild the stack:"
 echo "  docker compose up -d"

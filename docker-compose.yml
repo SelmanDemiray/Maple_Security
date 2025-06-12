@@ -35,17 +35,11 @@ services:
       - cluster.name=opensearch-cluster
       - node.name=opensearch
       - discovery.type=single-node
-      - bootstrap.memory_lock=true
+      - bootstrap.memory_lock=false
       - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
       - "DISABLE_INSTALL_DEMO_CONFIG=true"
       - "DISABLE_SECURITY_PLUGIN=true"
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-      nofile:
-        soft: 65536
-        hard: 65536
+      - "max_map_count=262144"
     volumes:
       - opensearch-data:/usr/share/opensearch/data
     ports:
