@@ -1,12 +1,22 @@
 #!/bin/bash
 
-echo "🔥 DESTROYING ALL DOCKER RESOURCES FOR SURICATA STACK 🔥"
+echo "🔥 DESTROYING ALL DOCKER RESOURCES FOR SECURITY MONITORING STACK 🔥"
 echo "This will remove ALL containers, volumes, networks, and images!"
 echo ""
 
 # Stop and remove all containers from this compose
 echo "Stopping and removing containers..."
 docker compose down --remove-orphans 2>/dev/null || true
+
+# Find and stop any remaining containers by name pattern
+echo "Checking for remaining security stack containers..."
+CONTAINERS=$(docker ps -a --filter "name=suricata" --filter "name=logstash" --filter "name=opensearch" --filter "name=opensearch-node" --filter "name=admin-dashboard" --format "{{.ID}}")
+
+if [ -n "$CONTAINERS" ]; then
+  echo "Found remaining containers, forcing removal..."
+  docker stop $CONTAINERS 2>/dev/null || true
+  docker rm $CONTAINERS 2>/dev/null || true
+fi
 
 # Remove all volumes (including data)
 echo "Removing all volumes..."
@@ -17,6 +27,7 @@ echo "Cleaning up dangling volumes..."
 docker volume prune -f
 
 # Remove the specific volumes by name if they still exist
+echo "Removing specific volumes..."
 docker volume rm sec_suricata-logs 2>/dev/null || true
 docker volume rm sec_opensearch-data 2>/dev/null || true
 docker volume rm suricata-logs 2>/dev/null || true
@@ -43,6 +54,18 @@ docker image prune -f
 # Clean up build cache
 echo "Cleaning up build cache..."
 docker builder prune -f
+
+# Verify all containers are gone
+REMAINING=$(docker ps -a --filter "name=suricata" --filter "name=logstash" --filter "name=opensearch" --filter "name=opensearch-node" --filter "name=admin-dashboard" --format "{{.Names}}")
+if [ -n "$REMAINING" ]; then
+  echo ""
+  echo "⚠️  WARNING: Some containers still remain after cleanup:"
+  echo "$REMAINING"
+  echo "You may need to remove them manually with: docker rm -f [container_id]"
+else
+  echo ""
+  echo "✅ All specified containers successfully removed!"
+fi
 
 # Final system cleanup
 echo "Running final system cleanup..."
