@@ -55,7 +55,8 @@ app.get('/api/containers', async (req, res) => {
         name.includes('suricata') || 
         name.includes('logstash') || 
         name.includes('opensearch') ||
-        name.includes('admin-dashboard')
+        name.includes('admin-dashboard') ||
+        name.includes('pihole')
       )
     );
 
@@ -360,6 +361,34 @@ app.get('/api/stats', async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch stats: ' + error.message });
+  }
+});
+
+// Pi-hole API endpoints
+app.get('/api/pihole/status', async (req, res) => {
+  try {
+    const response = await axios.get('http://pihole:80/admin/api.php');
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: 'Pi-hole status check failed: ' + error.message });
+  }
+});
+
+app.get('/api/pihole/summary', async (req, res) => {
+  try {
+    const response = await axios.get('http://pihole:80/admin/api.php?summary');
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: 'Pi-hole summary failed: ' + error.message });
+  }
+});
+
+app.get('/api/pihole/querytypes', async (req, res) => {
+  try {
+    const response = await axios.get('http://pihole:80/admin/api.php?queryTypesOverTime');
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: 'Pi-hole query types failed: ' + error.message });
   }
 });
 

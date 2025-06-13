@@ -775,6 +775,23 @@
                     <canvas id="timelineChart"></canvas>
                 </div>
             </div>
+
+            <!-- Pi-hole DNS Statistics -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon" style="background: linear-gradient(135deg, #28a745, #20c997);">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        Pi-hole DNS Protection
+                    </div>
+                </div>
+                <div id="pihole-stats" class="loading">Loading Pi-hole stats...</div>
+                
+                <div class="service-metrics" id="pihole-metrics">
+                    <!-- Pi-hole metrics will be populated here -->
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1131,7 +1148,8 @@
                 updateHealth(),
                 updateContainers(),
                 updateStats(),
-                updateIndices()
+                updateIndices(),
+                updatePihole()
             ]);
 
             refreshBtn.innerHTML = originalText;

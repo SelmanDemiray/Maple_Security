@@ -10,7 +10,7 @@ docker compose down --remove-orphans 2>/dev/null || true
 
 # Find and stop any remaining containers by name pattern
 echo "Checking for remaining security stack containers..."
-CONTAINERS=$(docker ps -a --filter "name=suricata" --filter "name=logstash" --filter "name=opensearch" --filter "name=opensearch-node" --filter "name=admin-dashboard" --format "{{.ID}}")
+CONTAINERS=$(docker ps -a --filter "name=suricata" --filter "name=logstash" --filter "name=opensearch" --filter "name=opensearch-node" --filter "name=admin-dashboard" --filter "name=pihole" --format "{{.ID}}")
 
 if [ -n "$CONTAINERS" ]; then
   echo "Found remaining containers, forcing removal..."
@@ -30,10 +30,16 @@ docker volume prune -f
 echo "Removing specific volumes..."
 docker volume rm sec_suricata-logs 2>/dev/null || true
 docker volume rm sec_opensearch-data 2>/dev/null || true
+docker volume rm sec_pihole-data 2>/dev/null || true
+docker volume rm sec_pihole-dnsmasq 2>/dev/null || true
 docker volume rm suricata-logs 2>/dev/null || true
 docker volume rm opensearch-data 2>/dev/null || true
+docker volume rm pihole-data 2>/dev/null || true
+docker volume rm pihole-dnsmasq 2>/dev/null || true
 docker volume rm maple_security_suricata-logs 2>/dev/null || true
 docker volume rm maple_security_opensearch-data 2>/dev/null || true
+docker volume rm maple_security_pihole-data 2>/dev/null || true
+docker volume rm maple_security_pihole-dnsmasq 2>/dev/null || true
 
 # Remove the custom network
 echo "Removing custom networks..."
@@ -62,9 +68,12 @@ docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "admin-dashboard|map
 # Remove Node.js base images that were used for building
 docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "^node:" | xargs -r docker rmi 2>/dev/null || true
 
+# Remove Pi-hole images
+docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "pihole" | xargs -r docker rmi 2>/dev/null || true
+
 # Alternative approach - remove by image ID for anything that might be missed
 echo "Removing any remaining related images by pattern..."
-docker images | grep -E "(suricata|opensearch|logstash|admin-dashboard|maple_security)" | awk '{print $3}' | xargs -r docker rmi -f 2>/dev/null || true
+docker images | grep -E "(suricata|opensearch|logstash|admin-dashboard|maple_security|pihole)" | awk '{print $3}' | xargs -r docker rmi -f 2>/dev/null || true
 
 # Clean up any dangling images
 echo "Cleaning up dangling images..."
@@ -79,7 +88,7 @@ echo "Cleaning up build cache..."
 docker builder prune -f --all 2>/dev/null || docker system prune -f
 
 # Verify all containers are gone
-REMAINING=$(docker ps -a --filter "name=suricata" --filter "name=logstash" --filter "name=opensearch" --filter "name=opensearch-node" --filter "name=admin-dashboard" --format "{{.Names}}")
+REMAINING=$(docker ps -a --filter "name=suricata" --filter "name=logstash" --filter "name=opensearch" --filter "name=opensearch-node" --filter "name=admin-dashboard" --filter "name=pihole" --format "{{.Names}}")
 if [ -n "$REMAINING" ]; then
   echo ""
   echo "⚠️  WARNING: Some containers still remain after cleanup:"
@@ -93,13 +102,13 @@ fi
 # Check for remaining images
 echo ""
 echo "Checking for remaining related images..."
-REMAINING_IMAGES=$(docker images | grep -E "(suricata|opensearch|logstash|admin-dashboard|maple_security)" || true)
+REMAINING_IMAGES=$(docker images | grep -E "(suricata|opensearch|logstash|admin-dashboard|maple_security|pihole)" || true)
 if [ -n "$REMAINING_IMAGES" ]; then
   echo "⚠️  WARNING: Some related images still remain:"
   echo "$REMAINING_IMAGES"
   echo ""
   echo "To force remove these images, run:"
-  echo "docker rmi -f \$(docker images | grep -E '(suricata|opensearch|logstash|admin-dashboard|maple_security)' | awk '{print \$3}')"
+  echo "docker rmi -f \$(docker images | grep -E '(suricata|opensearch|logstash|admin-dashboard|maple_security|pihole)' | awk '{print \$3}')"
 else
   echo "✅ All related images successfully removed!"
 fi

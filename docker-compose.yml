@@ -84,10 +84,70 @@ services:
       - opensearch-net
     restart: unless-stopped
 
+  pihole:
+    image: pihole/pihole:latest
+    container_name: pihole
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "8080:80/tcp"
+    environment:
+      TZ: 'America/Chicago'
+      FTLCONF_LOCAL_IPV4: '172.20.0.10'
+      PIHOLE_DNS_: '1.1.1.1;8.8.8.8'
+      VIRTUAL_HOST: 'pihole.local'
+      DNSMASQ_LISTENING: 'all'
+      WEB_PORT: 80
+      SERVERIP: '172.20.0.10'
+      WEBTHEME: 'default-dark'
+      REV_SERVER: 'false'
+      TEMPERATUREUNIT: 'c'
+      WEBUIBOXEDLAYOUT: 'boxed'
+      QUERY_LOGGING: 'true'
+      INSTALL_WEB_SERVER: 'true'
+      INSTALL_WEB_INTERFACE: 'true'
+      LIGHTTPD_ENABLED: 'true'
+    volumes:
+      - pihole-data:/etc/pihole
+      - pihole-dnsmasq:/etc/dnsmasq.d
+      - ./pihole/init-pihole.sh:/usr/local/bin/init-pihole.sh:ro
+    networks:
+      opensearch-net:
+        ipv4_address: 172.20.0.10
+    cap_add:
+      - NET_ADMIN
+    dns:
+      - 127.0.0.1
+      - 1.1.1.1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/admin/", "||", "exit", "1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    command: >
+      sh -c "
+        echo 'Starting Pi-hole initialization...' &&
+        /s6-init &
+        sleep 45 &&
+        echo 'Pi-hole base setup complete, running blocklist setup...' &&
+        if [ -f /usr/local/bin/init-pihole.sh ]; then
+          chmod +x /usr/local/bin/init-pihole.sh &&
+          /usr/local/bin/init-pihole.sh &
+        fi &&
+        wait
+      "
+
 volumes:
   suricata-logs:
   opensearch-data:
+  pihole-data:
+  pihole-dnsmasq:
 
 networks:
   opensearch-net:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
