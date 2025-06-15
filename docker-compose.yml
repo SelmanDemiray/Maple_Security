@@ -111,6 +111,7 @@ services:
       - pihole-data:/etc/pihole
       - pihole-dnsmasq:/etc/dnsmasq.d
       - ./pihole/init-pihole.sh:/usr/local/bin/init-pihole.sh:ro
+      - ./pihole/adlists.txt:/usr/local/bin/adlists.txt:ro
     networks:
       opensearch-net:
         ipv4_address: 172.20.0.10

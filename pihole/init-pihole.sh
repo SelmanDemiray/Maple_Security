@@ -60,32 +60,45 @@ if [ "$db_ready" = false ]; then
     exit 1
 fi
 
-echo "Adding comprehensive block lists to Pi-hole..."
+echo "Loading ad lists from configuration file..."
 
-# Essential ad blocking lists (high success rate)
-add_adlist "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts" "StevenBlack Unified Hosts"
-add_adlist "https://raw.githubusercontent.com/AdguardTeam/AdGuardSDNSFilter/master/Filters/filter.txt" "AdGuard DNS Filter"
-add_adlist "https://adaway.org/hosts.txt" "AdAway Default Blocklist"
-
-# Privacy and tracking protection
-add_adlist "https://someonewhocares.org/hosts/zero/hosts" "Dan Pollock's Hosts"
-add_adlist "https://raw.githubusercontent.com/crazy-max/WindowsSpyBlocker/master/data/hosts/spy.txt" "Windows Spy Blocker"
-add_adlist "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/UncheckyAds/hosts" "Unchecky Ads"
-
-# Malware and security lists
-add_adlist "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/Alternate%20versions%20Anti-Malware%20List/AntiMalwareHosts.txt" "Anti-Malware Hosts"
-add_adlist "https://raw.githubusercontent.com/RPiList/specials/master/Blocklisten/malware" "RPiList Malware"
-add_adlist "https://raw.githubusercontent.com/mitchellkrogza/Phishing.Database/master/phishing-domains-ACTIVE.txt" "Phishing Database"
-
-# Social media and tracking
-add_adlist "https://raw.githubusercontent.com/jmdugan/blocklists/master/corporations/facebook/all" "Facebook Tracking"
-add_adlist "https://raw.githubusercontent.com/Perflyst/PiHoleBlocklist/master/SmartTV.txt" "Smart TV Blocklist"
-add_adlist "https://raw.githubusercontent.com/Perflyst/PiHoleBlocklist/master/android-tracking.txt" "Android Tracking"
-
-# Additional comprehensive lists
-add_adlist "https://raw.githubusercontent.com/hectorm/hmirror/master/data/adguard-simplified/list.txt" "AdGuard Simplified"
-add_adlist "https://raw.githubusercontent.com/hectorm/hmirror/master/data/easylist/list.txt" "EasyList"
-add_adlist "https://raw.githubusercontent.com/hectorm/hmirror/master/data/easyprivacy/list.txt" "EasyPrivacy"
+# Load ad lists from external file
+ADLISTS_FILE="/usr/local/bin/adlists.txt"
+if [ -f "$ADLISTS_FILE" ]; then
+    echo "Reading ad lists from: $ADLISTS_FILE"
+    added_count=0
+    
+    while IFS='|' read -r url comment || [ -n "$url" ]; do
+        # Skip empty lines and comments
+        if [[ -z "$url" || "$url" =~ ^[[:space:]]*# ]]; then
+            continue
+        fi
+        
+        # Trim whitespace
+        url=$(echo "$url" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        comment=$(echo "$comment" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        
+        # Use URL as comment if comment is empty
+        if [ -z "$comment" ]; then
+            comment="$url"
+        fi
+        
+        if add_adlist "$url" "$comment"; then
+            ((added_count++))
+        fi
+        
+    done < "$ADLISTS_FILE"
+    
+    echo "Added $added_count ad lists from configuration file"
+else
+    echo "Warning: Ad lists file not found at $ADLISTS_FILE"
+    echo "Adding default essential lists..."
+    
+    # Fallback to essential lists if file is missing
+    add_adlist "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts" "StevenBlack Unified Hosts"
+    add_adlist "https://raw.githubusercontent.com/AdguardTeam/AdGuardSDNSFilter/master/Filters/filter.txt" "AdGuard DNS Filter"
+    add_adlist "https://adaway.org/hosts.txt" "AdAway Default Blocklist"
+fi
 
 echo "All block lists added successfully!"
 

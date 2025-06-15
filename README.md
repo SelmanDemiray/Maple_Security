@@ -125,6 +125,24 @@ The admin dashboard (http://localhost:3000) now includes:
 - **Auto-refresh**: Updates every 30 seconds automatically
 - **Service Logs**: Real-time log viewing for all containers
 
+## 🛡️ Pi-hole Ad Lists Management
+
+**Adding/Removing Ad Lists**: Edit `pihole/adlists.txt` to manage your ad blocking lists
+- Format: `URL|Description` (one per line)  
+- Lines starting with `#` are comments
+- See `pihole/README.md` for detailed instructions
+
+**Update Pi-hole with New Lists**:
+```bash
+./update-pihole-lists.sh
+```
+
+This script will:
+- Add new lists from your configuration
+- Skip existing lists automatically  
+- Run gravity update to download and process all lists
+- Show detailed progress and statistics
+
 ## Network Security Setup
 
 ### **Router Configuration (Recommended)**
