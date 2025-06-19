@@ -19,6 +19,7 @@ services:
     volumes:
       - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
       - ./logstash/pipeline/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+      - ./logstash/templates:/usr/share/logstash/templates:ro
       - suricata-logs:/var/log/suricata:ro
     environment:
       - "LS_JAVA_OPTS=-Xmx512m -Xms512m"
@@ -32,14 +33,21 @@ services:
     image: opensearchproject/opensearch:latest
     container_name: opensearch
     environment:
-      - cluster.name=opensearch-cluster
-      - node.name=opensearch
+      - cluster.name=maple-security-cluster
+      - node.name=opensearch-node1
       - discovery.type=single-node
       - bootstrap.memory_lock=false
-      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g"
       - "DISABLE_INSTALL_DEMO_CONFIG=true"
       - "DISABLE_SECURITY_PLUGIN=true"
       - "max_map_count=262144"
+      # Enable ML plugins and features
+      - "plugins.ml_commons.controller_enabled=true"
+      - "plugins.ml_commons.mcp_server_enabled=true"
+      - "plugins.ml_commons.only_run_on_ml_node=false"
+      - "plugins.ml_commons.native_memory_threshold=99"
+      # Index lifecycle management
+      - "plugins.index_state_management.enabled=true"
     volumes:
       - opensearch-data:/usr/share/opensearch/data
     ports:
@@ -59,6 +67,10 @@ services:
     environment:
       - 'OPENSEARCH_HOSTS=["http://opensearch:9200"]'
       - "DISABLE_SECURITY_DASHBOARDS_PLUGIN=true"
+      # Enable ML and Security Analytics plugins
+      - "OPENSEARCH_DASHBOARDS_PLUGINS=anomalyDetectionDashboards,mlCommonsDashboards,securityAnalyticsDashboards"
+    volumes:
+      - ./opensearch-dashboards/opensearch_dashboards.yml:/usr/share/opensearch-dashboards/config/opensearch_dashboards.yml:ro
     depends_on:
       - opensearch
     networks:
@@ -93,12 +105,12 @@ services:
       - "8080:80/tcp"
     environment:
       TZ: 'America/Chicago'
-      FTLCONF_LOCAL_IPV4: '172.20.0.10'
+      FTLCONF_LOCAL_IPV4: '172.25.0.10'
       PIHOLE_DNS_: '1.1.1.1;8.8.8.8'
       VIRTUAL_HOST: 'pihole.local'
       DNSMASQ_LISTENING: 'all'
       WEB_PORT: 80
-      SERVERIP: '172.20.0.10'
+      SERVERIP: '172.25.0.10'
       WEBTHEME: 'default-dark'
       REV_SERVER: 'false'
       TEMPERATUREUNIT: 'c'
@@ -114,7 +126,7 @@ services:
       - ./pihole/adlists.txt:/usr/local/bin/adlists.txt:ro
     networks:
       opensearch-net:
-        ipv4_address: 172.20.0.10
+        ipv4_address: 172.25.0.10
     cap_add:
       - NET_ADMIN
     dns:
@@ -151,4 +163,4 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.20.0.0/16
+        - subnet: 172.25.0.0/16

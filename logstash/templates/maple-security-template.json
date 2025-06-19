@@ -1,0 +1,265 @@
+{
+  "index_patterns": ["maple-security*"],
+  "version": 1,
+  "settings": {
+    "index": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "refresh_interval": "30s",
+      "max_result_window": 50000,
+      "codec": "best_compression",
+      "plugins.index_state_management.rollover_alias": "maple-security"
+    }
+  },
+  "mappings": {
+    "properties": {
+      "@timestamp": {
+        "type": "date",
+        "format": "strict_date_optional_time||epoch_millis"
+      },
+      "timestamp": {
+        "type": "date",
+        "format": "strict_date_optional_time||epoch_millis"
+      },
+      "security_event_timestamp": {
+        "type": "date",
+        "format": "strict_date_optional_time||epoch_millis"
+      },
+      "data_source": {
+        "type": "keyword"
+      },
+      "event_type": {
+        "type": "keyword"
+      },
+      "event_classification": {
+        "type": "keyword"
+      },
+      "src_ip": {
+        "type": "ip"
+      },
+      "dest_ip": {
+        "type": "ip"
+      },
+      "src_port": {
+        "type": "integer"
+      },
+      "dest_port": {
+        "type": "integer"
+      },
+      "proto": {
+        "type": "keyword"
+      },
+      "service_type": {
+        "type": "keyword"
+      },
+      "protocol_category": {
+        "type": "keyword"
+      },
+      "src_network_type": {
+        "type": "keyword"
+      },
+      "dest_network_type": {
+        "type": "keyword"
+      },
+      "risk_score": {
+        "type": "integer"
+      },
+      "threat_level": {
+        "type": "keyword"
+      },
+      "alert": {
+        "properties": {
+          "signature": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          },
+          "signature_id": {
+            "type": "integer"
+          },
+          "severity": {
+            "type": "integer"
+          },
+          "category": {
+            "type": "keyword"
+          },
+          "action": {
+            "type": "keyword"
+          }
+        }
+      },
+      "http": {
+        "properties": {
+          "hostname": {
+            "type": "keyword"
+          },
+          "url": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          },
+          "http_method": {
+            "type": "keyword"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "protocol": {
+            "type": "keyword"
+          },
+          "length": {
+            "type": "integer"
+          }
+        }
+      },
+      "dns": {
+        "properties": {
+          "query": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          },
+          "type": {
+            "type": "keyword"
+          },
+          "rcode": {
+            "type": "keyword"
+          },
+          "rrname": {
+            "type": "keyword"
+          }
+        }
+      },
+      "tls": {
+        "properties": {
+          "subject": {
+            "type": "keyword"
+          },
+          "issuerdn": {
+            "type": "keyword"
+          },
+          "serial": {
+            "type": "keyword"
+          },
+          "fingerprint": {
+            "type": "keyword"
+          }
+        }
+      },
+      "src_geoip": {
+        "properties": {
+          "country_name": {
+            "type": "keyword"
+          },
+          "city_name": {
+            "type": "keyword"
+          },
+          "continent_code": {
+            "type": "keyword"
+          },
+          "country_code2": {
+            "type": "keyword"
+          },
+          "location": {
+            "type": "geo_point"
+          }
+        }
+      },
+      "dest_geoip": {
+        "properties": {
+          "country_name": {
+            "type": "keyword"
+          },
+          "city_name": {
+            "type": "keyword"
+          },
+          "continent_code": {
+            "type": "keyword"
+          },
+          "country_code2": {
+            "type": "keyword"
+          },
+          "location": {
+            "type": "geo_point"
+          }
+        }
+      },
+      "flow": {
+        "properties": {
+          "pkts_toserver": {
+            "type": "integer"
+          },
+          "pkts_toclient": {
+            "type": "integer"
+          },
+          "bytes_toserver": {
+            "type": "integer"
+          },
+          "bytes_toclient": {
+            "type": "integer"
+          },
+          "start": {
+            "type": "date"
+          },
+          "end": {
+            "type": "date"
+          },
+          "age": {
+            "type": "integer"
+          },
+          "state": {
+            "type": "keyword"
+          },
+          "reason": {
+            "type": "keyword"
+          }
+        }
+      },
+      "ml_features": {
+        "properties": {
+          "risk_score": {
+            "type": "float"
+          },
+          "anomaly_score": {
+            "type": "float"
+          },
+          "is_anomaly": {
+            "type": "boolean"
+          },
+          "threat_level": {
+            "type": "keyword"
+          },
+          "predictions": {
+            "type": "object",
+            "enabled": false
+          },
+          "model_id": {
+            "type": "keyword"
+          },
+          "detector_id": {
+            "type": "keyword"
+          },
+          "feature_vector": {
+            "type": "dense_vector",
+            "dims": 20
+          },
+          "security_category": {
+            "type": "keyword"
+          }
+        }
+      }
+    }
+  }
+}

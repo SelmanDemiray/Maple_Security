@@ -6,7 +6,7 @@
 set -e
 
 # SINGLE SOURCE OF TRUTH FOR PI-HOLE PASSWORD
-PIHOLE_PASSWORD="MapleSecure2024!sdfsadfsdafdas"
+PIHOLE_PASSWORD="**#*%Z8okTp^!&2YqV87$66mdPx$2Q9aH64$TM7^2q455"
 
 echo "=== Pi-hole Password Reset Script ==="
 echo "This script will set/reset the Pi-hole admin password"

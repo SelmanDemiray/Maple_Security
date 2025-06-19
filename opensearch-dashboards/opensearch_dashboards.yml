@@ -1,0 +1,29 @@
+# OpenSearch Dashboards Configuration
+# Basic configuration for security monitoring
+
+server.name: maple-security-dashboards
+server.host: "0.0.0.0"
+server.port: 5601
+
+opensearch.hosts: ["http://opensearch:9200"]
+opensearch.ssl.verificationMode: none
+opensearch.username: ""
+opensearch.password: ""
+
+# Dashboard settings
+opensearchDashboards.index: ".opensearch_dashboards"
+
+# Logging
+logging.dest: stdout
+logging.silent: false
+logging.quiet: false
+logging.verbose: false
+
+# Enable visualization plugins
+vis_type_vega.enableExternalUrls: true
+vis_type_timeline.enabled: true
+data.search.aggs.shardDelay.enabled: true
+
+# Basic ML support (if available)
+ml_commons_dashboards.enabled: true
+anomaly_detection_dashboards.enabled: true
