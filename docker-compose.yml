@@ -99,18 +99,14 @@ services:
   pihole:
     image: pihole/pihole:latest
     container_name: pihole
-    ports:
-      - "53:53/tcp"
-      - "53:53/udp"
-      - "8080:80/tcp"
+    network_mode: host
     environment:
       TZ: 'America/Chicago'
-      FTLCONF_LOCAL_IPV4: '172.25.0.10'
       PIHOLE_DNS_: '1.1.1.1;8.8.8.8'
       VIRTUAL_HOST: 'pihole.local'
       DNSMASQ_LISTENING: 'all'
-      WEB_PORT: 80
-      SERVERIP: '172.25.0.10'
+      DNSMASQ_USER: 'pihole'
+      WEB_PORT: 8080
       WEBTHEME: 'default-dark'
       REV_SERVER: 'false'
       TEMPERATUREUNIT: 'c'
@@ -119,14 +115,14 @@ services:
       INSTALL_WEB_SERVER: 'true'
       INSTALL_WEB_INTERFACE: 'true'
       LIGHTTPD_ENABLED: 'true'
+      FTLCONF_PRIVACYLEVEL: '0'
     volumes:
       - pihole-data:/etc/pihole
       - pihole-dnsmasq:/etc/dnsmasq.d
       - ./pihole/init-pihole.sh:/usr/local/bin/init-pihole.sh:ro
       - ./pihole/adlists.txt:/usr/local/bin/adlists.txt:ro
-    networks:
-      opensearch-net:
-        ipv4_address: 172.25.0.10
+      - ./pihole/99-custom.conf:/etc/dnsmasq.d/99-custom.conf:ro
+      - ./pihole/pihole-FTL.conf:/etc/pihole/pihole-FTL.conf:ro
     cap_add:
       - NET_ADMIN
     dns:
