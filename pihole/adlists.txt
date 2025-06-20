@@ -4,7 +4,7 @@
 
 # === ESSENTIAL AD BLOCKING LISTS (High Success Rate) ===
 https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts|StevenBlack Unified Hosts
-https://raw.githubusercontent.com/AdguardTeam/AdGuardSDNSFilter/master/Filters/filter.txt|AdGuard DNS Filter
+https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/adservers.txt|AdGuard DNS Filter
 https://adaway.org/hosts.txt|AdAway Default Blocklist
 
 # === PRIVACY AND TRACKING PROTECTION ===

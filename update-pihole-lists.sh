@@ -32,7 +32,7 @@ if [ ! -f "$ADLISTS_FILE" ]; then
     exit 1
 fi
 
-# Function to add adlist via Pi-hole's built-in command
+# Function to add adlist via direct database insertion (Pi-hole v6.1.2 compatible)
 add_adlist() {
     local url="$1"
     local comment="$2"
@@ -40,13 +40,40 @@ add_adlist() {
     echo "  📝 Adding: $comment"
     echo "     URL: $url"
     
-    # Use Pi-hole's built-in adlist command to add the URL
-    if $EXEC_PREFIX pihole -a addlist "$url" > /dev/null 2>&1; then
-        echo "  ✅ Successfully added: $comment"
-        return 0
+    # Escape single quotes in URL and comment for SQL
+    local escaped_url="${url//\'/\'\'}"
+    local escaped_comment="${comment//\'/\'\'}"
+    
+    # Check if URL already exists in database
+    local exists
+    if [ -n "$EXEC_PREFIX" ]; then
+        exists=$($EXEC_PREFIX pihole-FTL sqlite3 "/etc/pihole/gravity.db" "SELECT COUNT(*) FROM adlist WHERE address='$escaped_url';" 2>/dev/null)
     else
-        echo "  ⚠️  Already exists or failed: $comment"
+        exists=$(pihole-FTL sqlite3 "/etc/pihole/gravity.db" "SELECT COUNT(*) FROM adlist WHERE address='$escaped_url';" 2>/dev/null)
+    fi
+    
+    if [[ "$exists" -gt 0 ]]; then
+        echo "  ⚠️  Already exists: $comment"
         return 1
+    else
+        # Insert into database
+        local current_time=$(date +%s)
+        local sql_cmd="INSERT INTO adlist (address, enabled, date_added, date_modified, comment) VALUES ('$escaped_url', 1, $current_time, $current_time, '$escaped_comment');"
+        
+        if [ -n "$EXEC_PREFIX" ]; then
+            $EXEC_PREFIX pihole-FTL sqlite3 "/etc/pihole/gravity.db" "$sql_cmd" 2>/dev/null
+        else
+            pihole-FTL sqlite3 "/etc/pihole/gravity.db" "$sql_cmd" 2>/dev/null
+        fi
+        
+        if [[ $? -eq 0 ]]; then
+            echo "  ✅ Successfully added to database: $comment"
+            return 0
+        else
+            echo "  ❌ Failed to add to database: $comment"
+            echo "  SQL: $sql_cmd"
+            return 1
+        fi
     fi
 }
 
