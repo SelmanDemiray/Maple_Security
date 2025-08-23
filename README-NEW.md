@@ -18,11 +18,6 @@ docker compose up -d
 ./cleanup-indices.sh --force
 ```
 
-4. **Set Pi-hole Password**:
-```bash
-./pihole-password.sh
-```
-
 ## 🔧 New Unified Security Index
 
 ### **Single Security Index: `maple-security`**
@@ -42,8 +37,6 @@ docker compose up -d
 ## 🎯 Access Your Services
 
 - **🛡️ Security Dashboard**: http://localhost:5601 *(Main ML-enhanced security interface)*
-- **⚙️ Admin Dashboard**: http://localhost:3000 *(System monitoring)*
-- **🔒 Pi-hole Admin**: http://localhost:8080/admin *(DNS protection)*
 - **📡 OpenSearch API**: http://localhost:9200 *(Direct API access)*
 
 ## 📊 Index Management
@@ -67,25 +60,16 @@ docker compose up -d
 - `service_type` - Network service identification
 - `src_network_type` / `dest_network_type` - Internal/external classification
 
-## 🔑 Pi-hole DNS Protection
-
-- **Admin Interface**: http://localhost:8080/admin
-- **Username**: admin
-- **Password**: Use `./pihole-password.sh` to set/reset
-- **DNS Server**: Configure devices to use server IP as DNS
-
 ## 🛠️ Management Scripts
 
 - **`cleanup-indices.sh`** - Clean old indices, create unified security index
 - **`setup.sh`** - Initial directory and permission setup
-- **`pihole-password.sh`** - Set/reset Pi-hole admin password
 - **`cleanup.sh`** - Complete stack removal and cleanup
 
 ## 🔍 Security Event Types
 
 The unified index captures and enriches:
 - **Network Alerts** - Suricata IDS/IPS detections
-- **DNS Events** - Pi-hole blocking and query analysis  
 - **HTTP/HTTPS Traffic** - Web traffic monitoring
 - **Flow Data** - Network connection analysis
 - **TLS Events** - Certificate and encryption monitoring
@@ -139,16 +123,6 @@ Configure alerts for:
 ├── opensearch-dashboards/          # NEW: ML-enabled dashboards
 │   ├── opensearch_dashboards.yml
 │   └── security-dashboard.json
-├── pihole/                         # DNS ad-blocking & filtering
-│   ├── adlists.txt
-│   ├── init-pihole.sh
-│   └── README.md
-└── admin-dashboard/                # System monitoring dashboard
-    ├── Dockerfile
-    ├── package.json
-    ├── server.js
-    └── public/
-        └── index.html
 ```
 
 ## 🆕 Migration from Old Setup
@@ -211,6 +185,32 @@ docker logs opensearch-dashboards
 docker restart opensearch-dashboards
 ```
 
+## 🎯 Next Steps
+
+1. **Configure Alerts**: Set up notifications for high-risk events
+2. **Custom ML Models**: Train models on your specific network patterns  
+3. **Dashboard Customization**: Create custom visualizations for your needs
+4. **API Integration**: Connect external security tools via REST API
+5. **Advanced Analytics**: Set up correlation rules and threat hunting queries
+
+---
+
+## 🛡️ Security Best Practices
+
+- Regularly review ML anomaly detections
+- Monitor risk score trends for unusual spikes
+- Set up automated alerts for critical events
+- Keep Suricata rules updated
+- Monitor index growth and retention policies
+## 🛡️ Security Best Practices
+
+- Regularly review ML anomaly detections
+- Monitor risk score trends for unusual spikes
+- Set up automated alerts for critical events
+- Keep Suricata rules updated
+- Monitor index growth and retention policies
+- Keep Suricata rules updated
+- Monitor index growth and retention policies
 ## 🎯 Next Steps
 
 1. **Configure Alerts**: Set up notifications for high-risk events

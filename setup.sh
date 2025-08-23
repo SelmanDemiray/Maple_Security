@@ -6,28 +6,28 @@ echo "🔧 Setting up Maple Security Stack directories and permissions..."
 echo "Creating directory structure..."
 mkdir -p suricata/config suricata/rules
 mkdir -p logstash/config logstash/pipeline
-mkdir -p pihole
-mkdir -p admin-dashboard/public
 
 # Set proper permissions
 echo "Setting permissions..."
 chmod 755 suricata/config suricata/rules
 chmod 755 logstash/config logstash/pipeline
-chmod 755 pihole
-chmod 755 admin-dashboard admin-dashboard/public
-
-# Make init script executable
-echo "Setting up Pi-hole initialization script..."
-chmod +x pihole/init-pihole.sh
-
-# Make password script executable
-echo "Setting up Pi-hole password script..."
-chmod +x pihole-password.sh
 
 # Ensure log directory permissions for Docker
 echo "Setting up log directory permissions..."
 sudo chown -R 1000:1000 . 2>/dev/null || true
 
+echo "✅ Setup complete!"
+echo ""
+echo "Next steps:"
+echo "1. Run: docker compose up -d"
+echo "2. Wait 3-5 minutes for all services to initialize"
+echo "3. Access services:"
+echo "   - OpenSearch Dashboard: http://localhost:5601"
+echo ""
+echo "Note: Initial blocklist download and processing may take 2-3 minutes."
+echo "   - OpenSearch Dashboard: http://localhost:5601"
+echo ""
+echo "Note: Initial blocklist download and processing may take 2-3 minutes."
 echo "✅ Setup complete!"
 echo ""
 echo "Next steps:"

@@ -7,7 +7,7 @@ echo ""
 # Check Docker containers
 echo "📊 Container Status:"
 echo "==================="
-docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "(NAMES|admin-dashboard|opensearch|logstash|suricata|pihole)"
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "(NAMES|opensearch|logstash|suricata)"
 echo ""
 
 # Check OpenSearch health
@@ -32,23 +32,23 @@ else
 fi
 echo ""
 
-# Check Admin Dashboard
-echo "⚙️ Admin Dashboard:"
-echo "=================="
-if curl -s http://localhost:3000/api/health | grep -q "cluster_name"; then
-    echo "✅ Admin Dashboard: HEALTHY"
-else
+echo "🌐 Service URLs:"
+echo "==============="
+echo "• OpenSearch API: http://localhost:9200"
+echo "• OpenSearch Dashboards: http://localhost:5601"
+echo ""
+echo "🚀 Stack is ready for security monitoring!"
     echo "❌ Admin Dashboard: NOT RESPONDING"
 fi
 echo ""
 
-# Check Pi-hole
-echo "🛡️ Pi-hole Status:"
-echo "=================="
-if docker exec pihole pihole status | grep -q "enabled"; then
-    echo "✅ Pi-hole: ACTIVE & BLOCKING"
-    docker exec pihole pihole -c | grep -E "(Domains|Blocklist)"
-else
+echo "🌐 Service URLs:"
+echo "==============="
+echo "• Admin Dashboard: http://localhost:3000"
+echo "• OpenSearch API: http://localhost:9200"
+echo "• OpenSearch Dashboards: http://localhost:5601"
+echo ""
+echo "🚀 Stack is ready for security monitoring!"
     echo "❌ Pi-hole: NOT ACTIVE"
 fi
 echo ""

@@ -18,17 +18,10 @@ docker compose up -d
 ./cleanup-indices.sh --force
 ```
 
-4. **Set Pi-hole Password**:
-```bash
-./pihole-password.sh
-```
-
 ## 📊 Service Access
 
-- **Admin Dashboard**: http://localhost:3000 (System monitoring)
 - **OpenSearch API**: http://localhost:9200
 - **OpenSearch Dashboards**: http://localhost:5601
-- **Pi-hole Admin**: http://localhost:8080/admin (Password in pihole-password.sh)
 
 ## 🛡️ Unified Security Index
 
@@ -70,4 +63,11 @@ This script will:
 - Set up ML-ready index templates
 - Configure index lifecycle management
 - Enable ML plugins and features
+- Update Logstash to send data to the unified index
+- Delete fragmented daily indices (suricata-YYYY.MM.DD)
+- Create a unified `maple-security` index
+- Set up ML-ready index templates
+- Configure index lifecycle management
+- Enable ML plugins and features
+- Update Logstash to send data to the unified index
 - Update Logstash to send data to the unified index

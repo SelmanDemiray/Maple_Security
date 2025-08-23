@@ -3,7 +3,6 @@ services:
     image: jasonish/suricata:latest
     container_name: suricata
     command: suricata -c /etc/suricata/suricata.yaml -i eth0
-    network_mode: host
     cap_add:
       - NET_ADMIN
       - SYS_NICE
@@ -12,6 +11,8 @@ services:
       - ./suricata/rules:/var/lib/suricata/rules:ro
       - suricata-logs:/var/log/suricata
     restart: unless-stopped
+    networks:
+      - opensearch-net
 
   logstash:
     image: opensearchproject/logstash-oss-with-opensearch-output-plugin:latest
@@ -21,6 +22,9 @@ services:
       - ./logstash/pipeline/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
       - ./logstash/templates:/usr/share/logstash/templates:ro
       - suricata-logs:/var/log/suricata:ro
+      # Add access to other log sources
+      - zeek-logs:/var/log/zeek:ro
+      - ntopng-data:/var/log/ntopng:ro
     environment:
       - "LS_JAVA_OPTS=-Xmx512m -Xms512m"
     depends_on:
@@ -96,65 +100,84 @@ services:
       - opensearch-net
     restart: unless-stopped
 
-  pihole:
-    image: pihole/pihole:latest
-    container_name: pihole
-    network_mode: host
-    environment:
-      TZ: 'America/Chicago'
-      PIHOLE_DNS_: '1.1.1.1;8.8.8.8'
-      VIRTUAL_HOST: 'pihole.local'
-      DNSMASQ_LISTENING: 'all'
-      WEB_PORT: 8080
-      WEBTHEME: 'default-dark'
-      REV_SERVER: 'false'
-      TEMPERATUREUNIT: 'c'
-      WEBUIBOXEDLAYOUT: 'boxed'
-      QUERY_LOGGING: 'true'
-      INSTALL_WEB_SERVER: 'true'
-      INSTALL_WEB_INTERFACE: 'true'
-      LIGHTTPD_ENABLED: 'true'
-      # Fixed Pi-hole FTL configuration
-      FTLCONF_dns_listeningMode: 'all'
-      FTLCONF_dns_queryLogging: 'true'
-      FTLCONF_dns_privacyLevel: '0'
-    volumes:
-      - pihole-data:/etc/pihole
-      - pihole-dnsmasq:/etc/dnsmasq.d
-      - ./pihole/init-pihole.sh:/usr/local/bin/init-pihole.sh:ro
-      - ./pihole/adlists.txt:/usr/local/bin/adlists.txt:ro
-      - ./pihole/99-custom.conf:/etc/dnsmasq.d/99-custom.conf:ro
-      - ./pihole/pihole-FTL.conf:/etc/pihole/pihole-FTL.conf:ro
+  # Network Traffic Analysis - WORKS OUT OF THE BOX
+  ntopng:
+    image: ntop/ntopng:stable
+    container_name: ntopng
+    command: --data-dir /var/lib/ntopng --interface eth0 --http-port 3001 --dont-change-user --syslog-facility local0
     cap_add:
       - NET_ADMIN
-    dns:
-      - 127.0.0.1
-      - 1.1.1.1
+    ports:
+      - "3001:3001"
+    volumes:
+      - ntopng-data:/var/lib/ntopng
+      - ntopng-logs:/var/log/ntopng
+    networks:
+      - opensearch-net
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/admin/", "||", "exit", "1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
-    command: >
-      sh -c "
-        echo 'Starting Pi-hole initialization...' &&
-        /s6-init &
-        sleep 45 &&
-        echo 'Pi-hole base setup complete, running blocklist setup...' &&
-        if [ -f /usr/local/bin/init-pihole.sh ]; then
-          chmod +x /usr/local/bin/init-pihole.sh &&
-          /usr/local/bin/init-pihole.sh &
-        fi &&
-        wait
-      "
+
+  # Network Protocol Analyzer - WORKS OUT OF THE BOX
+  zeek:
+    image: zeekurity/zeek:latest
+    container_name: zeek
+    command: zeek -i eth0 local "Site::local_nets += { 172.25.0.0/16 }"
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - zeek-logs:/usr/local/zeek/logs
+    networks:
+      - opensearch-net
+    restart: unless-stopped
+
+
+
+  # Honeypot - WORKS OUT OF THE BOX
+  cowrie:
+    image: cowrie/cowrie:latest
+    container_name: cowrie
+    ports:
+      - "2222:2222/tcp"
+      - "2223:2223/tcp"
+    volumes:
+      - cowrie-data:/cowrie/cowrie-git/var
+    networks:
+      - opensearch-net
+    restart: unless-stopped
+
+  # Vulnerability Scanner - ON DEMAND ONLY
+  nuclei:
+    image: projectdiscovery/nuclei:latest
+    container_name: nuclei
+    command: -version
+    volumes:
+      - nuclei-results:/results
+    networks:
+      - opensearch-net
+    restart: "no"
+    profiles:
+      - scan
+
+  # Port Scanner - ON DEMAND ONLY
+  nmap:
+    image: instrumentisto/nmap:latest
+    container_name: nmap
+    volumes:
+      - nmap-results:/results
+    networks:
+      - opensearch-net
+    restart: "no"
+    profiles:
+      - scan
 
 volumes:
   suricata-logs:
   opensearch-data:
-  pihole-data:
-  pihole-dnsmasq:
+  ntopng-data:
+  ntopng-logs:
+  zeek-logs:
+  cowrie-data:
+  nuclei-results:
+  nmap-results:
 
 networks:
   opensearch-net:
